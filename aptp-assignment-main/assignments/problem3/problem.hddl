@@ -1,0 +1,92 @@
+(define (problem problem_three) (:domain emergency-service-extended-hierarchical)
+
+(:objects 
+    
+    cr1 - carrier
+    b1 b2 - box ;b3 b4 b5
+    l1 l2 - location ;l3
+    c1 c2 c3 c4 c5 c6 - content
+    gizem daria - person ;indira savannah luca
+    q1 q2 q3 q4 - quantity
+)
+
+(:htn
+    :parameters ()
+    :subtasks (and
+        (task0 (t_rescue agent gizem))
+        (task1 (t_rescue agent daria))
+        (task2 (t_rescue agent daria))
+        ;(task3 (t_rescue agent indira))
+        ;(task4 (t_rescue agent indira))
+        ;(task5 (t_rescue agent savannah))
+        ;(task6 (t_rescue agent savannah))
+        ;(task7 (t_rescue agent savannah))
+        (task8 (t_return agent))
+    )
+    :ordering(and
+        (task0 < task8)
+        (task1 < task8)
+        (task2 < task8)
+        ;(task3 < task8)
+        ;(task4 < task8)
+        ;(task5 < task8)
+        ;(task6 < task8)
+        ;(task7 < task8)
+    )
+)
+
+(:init
+
+    ;SUCCESSOR RELATIONSHIPS
+    (succ q1 zero)
+    (succ q2 q1)
+    (succ q3 q2)
+    (succ q4 q3)
+
+    ;LESS THAN RELATIONSHIPS
+    (leq zero zero) (leq zero q1) (leq zero q2) (leq zero q3) (leq zero q4)
+    (leq q1 q1) (leq q1 q2) (leq q1 q3) (leq q1 q4)
+    (leq q2 q2) (leq q2 q3) (leq q2 q4)
+    (leq q3 q3) (leq q3 q4)
+    (leq q4 q4)
+
+    ; PEOPLE 
+    (at gizem l1) (needs gizem medicine) (count_needs gizem q1)
+    (at daria l2) (needs daria medicine) (needs daria food) (count_needs daria q2)
+    ;(at indira l3) (needs indira tool) (needs indira food) (count_needs indira q2)
+    ;(at savannah l3) (needs savannah tool) (needs savannah food) (needs savannah medicine) (count_needs savannah q3)
+    ;(at luca depot) (safe luca) (count_needs luca zero)
+
+    ; NEED COUNTERS
+    (count_needed_at medicine l1 q1)
+    (count_needed_at food l1 zero)
+    (count_needed_at tool l1 zero)
+    (count_needed_at medicine l2 q1)
+    (count_needed_at food l2 q1)
+    (count_needed_at tool l2 zero)
+    ;(count_needed_at medicine l3 q1)
+    ;(count_needed_at tool l3 q2)
+    ;(count_needed_at food l3 q2)
+    
+    ; BOXES
+    (at b1 depot) (empty b1) (loadable b1) 
+    (at b2 depot) (empty b2) (loadable b2)
+    ;(at b3 depot) (empty b3) (loadable b3)
+    ;(at b4 depot) (empty b4) (loadable b4)
+    ;(at b5 depot) (empty b5) (loadable b5)
+
+    ; CONTENTS
+    (at c1 depot) (available c1) (instance_of c1 food)
+    (at c2 depot) (available c2) (instance_of c2 food)
+    (at c3 depot) (available c3) (instance_of c3 medicine)
+    (at c4 depot) (available c4) (instance_of c4 medicine)
+    (at c5 depot) (available c5) (instance_of c5 medicine)
+    (at c6 depot) (available c6) (instance_of c6 tool)
+
+    ; CARRIERS
+    (at cr1 depot) (count_load cr1 zero) (max_load cr1 q4)
+
+    ; ROBOTS
+    (at agent depot) (pulls agent cr1) (not_busy agent)
+)
+)

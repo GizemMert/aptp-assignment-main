@@ -1,0 +1,37 @@
+;;!domain: emergency-service-extended
+;;!problem: problem_two
+
+0.00000: (fill agent b1 c5 medicine depot)
+1.00000: (fill agent b3 c1 food depot)
+2.00000: (fill agent b4 c6 tool depot)
+3.00000: (pickup agent cr1 b2 depot)
+4.00000: (pickup agent cr1 b1 depot)
+5.00000: (pickup agent cr1 b3 depot)
+6.00000: (pickup agent cr1 b4 depot)
+7.00000: (fill agent b2 c3 medicine depot)
+8.00000: (move agent depot l2)
+9.00000: (empty agent cr1 b1 c5 medicine daria l2)
+10.00000: (check_empty agent cr1 b1 c5 medicine l2)
+11.00000: (move agent l2 depot)
+12.00000: (fill agent b1 c4 medicine depot)
+13.00000: (move agent depot l1)
+14.00000: (empty agent cr1 b2 c3 medicine gizem l1)
+15.00000: (check_empty agent cr1 b2 c3 medicine l1)
+16.00000: (move agent l1 depot)
+17.00000: (fill agent b2 c2 food depot)
+18.00000: (move agent depot l2)
+19.00000: (empty agent cr1 b2 c2 food daria l2)
+20.00000: (check_empty agent cr1 b2 c2 food l2)
+21.00000: (move agent l2 l3)
+22.00000: (empty agent cr1 b3 c1 food indira l3)
+23.00000: (empty agent cr1 b3 c1 food savannah l3)
+24.00000: (check_empty agent cr1 b3 c1 food l3)
+25.00000: (empty agent cr1 b4 c6 tool indira l3)
+26.00000: (empty agent cr1 b4 c6 tool savannah l3)
+27.00000: (check_empty agent cr1 b4 c6 tool l3)
+28.00000: (empty agent cr1 b1 c4 medicine savannah l3)
+29.00000: (check_empty agent cr1 b1 c4 medicine l3)
+30.00000: (move agent l3 depot)
+
+; Makespan: 30
+; Metric: 30

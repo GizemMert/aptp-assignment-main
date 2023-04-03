@@ -1,0 +1,3 @@
+# Problem 3
+
+We leverage the scenario in **Problem 2**, but in this case we need to address the problem with hierarchical task networks (HTN). To this extent, it is suggested to keep the same actions as per the solution poposed for **Problem 2**, the same initial condition and the same goal. However, here the candidate shall introduce `:tasks` and `:methods` following approaches similar to those discussed in the Lab session on HTN.
