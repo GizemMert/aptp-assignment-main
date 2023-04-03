@@ -1,0 +1,659 @@
+;domain file for the problem 3.3 of the assigment
+;definition of the emergency-service scenario
+
+; ---------------------------------------------------
+
+(define (domain emergency-service-extended-hierarchical)
+    (:requirements :strips :typing :equality :hierachie) 
+
+    (:types 
+
+        location locatable content_type quantity - object
+        person box robot carrier content - locatable
+    ) 
+
+    (:constants
+        
+        zero - quantity
+        agent - robot
+        depot - location
+        food medicine tool - content_type
+    )
+
+    (:predicates
+        
+        (at ?o - locatable ?l - location) ; locatable object is at location
+        (contains ?b - box ?c - content) ; box contains the content
+        (needs ?p - person ?t - content_type) ; person needs content of given type
+        (instance_of ?c - content ?t - content_type) ; content is instance of given type
+        (pulls ?r - robot ?cr - carrier) ; robot is pulling the carrier
+        (carries ?cr - carrier ?b - box) ; carrier is carrying the box
+        (is_emptying_at ?r - robot ?b - box ?l - location) ; robot is emptying box at given location
+        
+        (safe ?p - person) ; person's needs are all satisfied
+        (not_busy ?r - robot) ; robot is performing non-atomic action
+        (empty ?b - box) ; box is empty (has no contents)
+        (loadable ?b - box) ; box can be loaded (no robot has loaded it yet)
+        (available ?c - content) ; content can be picked up (not contained in a box)
+
+        (succ ?q1 - quantity ?q2 - quantity) ; quantity 1 is successor of quantity 2
+        (leq ?q1 - quantity ?q2 - quantity) ; quantity 1 is less or equal to quantity 2
+        
+        (max_load ?cr - carrier ?q - quantity) ; max number of boxes carried by carrier
+        (count_load ?cr - carrier ?q - quantity) ; number of boxes carried by carrier
+        (count_needs ?p - person ?q - quantity) ; number of content types needed by person
+        (count_needed_at ?t - content_type ?l - location ?q - quantity) ; people who need a given content type at a location
+    )
+
+    ;;; TASKS ;;;
+    
+    (:task t_rescue 
+        :parameters (?r - robot ?p - person)
+        :precondition ()
+        :effect ()
+    )
+    
+    (:task t_return
+        :parameters (?r - robot)
+        :precondition ()
+        :effect ()
+    )
+
+    ;;; METHODS ;;;
+
+    (:method m_rescue_1
+        :parameters (
+            ?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type
+            ?p - person ?l - location 
+            ?old_needs_p - quantity ?new_needs_p - quantity
+            ?old_needed_at - quantity ?new_needed_at - quantity
+        )
+        :task (t_rescue ?r ?p)
+        :subtasks (and 
+            (task0 (start_empty ?r ?cr ?b ?c ?t ?p ?l 
+                        ?old_needs_p ?new_needs_p 
+                        ?old_needed_at ?new_needed_at))
+            (task1 (check_empty ?r ?cr ?b ?c ?t ?l))
+        )
+        :ordering (and 
+            (task0 < task1)
+        )
+    )
+
+    (:method m_rescue_2
+        :parameters (
+            ?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type
+            ?p1 - person ?p2 - person ?l - location
+            ?old_needs_p1 - quantity ?new_needs_p1 - quantity
+            ?old_needs_p2 - quantity ?new_needs_p2 - quantity
+            ?old_needed_at - quantity ?new_needed_at1 - quantity ?new_needed_at2 - quantity
+        )
+        :task (t_rescue ?r ?p1)
+        :subtasks (and 
+            (task0 (start_empty ?r ?cr ?b ?c ?t ?p1 ?l 
+                        ?old_needs_p1 ?new_needs_p1 
+                        ?old_needed_at ?new_needed_at1))
+            (task1 (continue_empty ?r ?cr ?b ?c ?t ?p2 ?l
+                        ?old_needs_p2 ?new_needs_p2 
+                        ?new_needed_at1 ?new_needed_at2))
+            (task2 (check_empty ?r ?cr ?b ?c ?t ?l))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+        )
+    )
+    
+    (:method m_go_rescue_1
+        :parameters (
+            ?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type
+            ?p - person ?from - location ?to - location 
+            ?old_needs_p - quantity ?new_needs_p - quantity
+            ?old_needed_at - quantity ?new_needed_at - quantity
+        )
+        :task (t_rescue ?r ?p)
+        :subtasks (and 
+            (task0 (move ?r ?from ?to))
+            (task1 (start_empty ?r ?cr ?b ?c ?t ?p ?to 
+                        ?old_needs_p ?new_needs_p 
+                        ?old_needed_at ?new_needed_at))
+            (task2 (check_empty ?r ?cr ?b ?c ?t ?to))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+        )
+    )
+
+    (:method m_go_rescue_2
+        :parameters (
+            ?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type
+            ?p1 - person ?p2 - person ?from - location ?to - location
+            ?old_needs_p1 - quantity ?new_needs_p1 - quantity
+            ?old_needs_p2 - quantity ?new_needs_p2 - quantity
+            ?old_needed_at - quantity ?new_needed_at1 - quantity ?new_needed_at2 - quantity
+        )
+        :task (t_rescue ?r ?p1)
+        :subtasks (and 
+            (task0 (move ?r ?from ?to))
+            (task1 (start_empty ?r ?cr ?b ?c ?t ?p1 ?to 
+                        ?old_needs_p1 ?new_needs_p1 
+                        ?old_needed_at ?new_needed_at1))
+            (task2 (continue_empty ?r ?cr ?b ?c ?t ?p2 ?to
+                        ?old_needs_p2 ?new_needs_p2 
+                        ?new_needed_at1 ?new_needed_at2))
+            (task3 (check_empty ?r ?cr ?b ?c ?t ?to))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+            (task2 < task3)
+        )
+    )
+    
+    (:method m_load_1_and_go_rescue_1
+        :parameters (
+            ?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type
+            ?p - person ?from - location ?to - location 
+            ?old_l - quantity ?new_l - quantity ?max_l - quantity
+            ?old_needs_p - quantity ?new_needs_p - quantity
+            ?old_needed_at - quantity ?new_needed_at - quantity
+        )
+        :task (t_rescue ?r ?p)
+        :subtasks (and 
+            (task0 (pickup ?r ?cr ?b ?from ?old_l ?new_l ?max_l))
+            (task1 (fill ?r ?b ?c ?t ?from))
+            (task2 (move ?r ?from ?to))
+            (task3 (start_empty ?r ?cr ?b ?c ?t ?p ?to 
+                        ?old_needs_p ?new_needs_p 
+                        ?old_needed_at ?new_needed_at))
+            (task4 (check_empty ?r ?cr ?b ?c ?t ?to))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+            (task2 < task3)
+            (task3 < task4)
+        )
+    )
+
+    (:method m_load_2_and_go_rescue_1
+        :parameters (
+            ?r - robot ?cr - carrier 
+            ?b1 - box ?c1 - content ?t1 - content_type
+            ?b2 - box ?c2 - content ?t2 - content_type
+            ?p - person ?from - location ?to - location 
+            ?old_l - quantity ?new_l1 - quantity 
+            ?new_l2 - quantity ?max_l - quantity
+            ?old_needs_p - quantity ?new_needs_p - quantity
+            ?old_needed_at - quantity ?new_needed_at - quantity
+        )
+        :task (t_rescue ?r ?p)
+        :subtasks (and 
+            (task0 (pickup ?r ?cr ?b1 ?from ?old_l ?new_l1 ?max_l))
+            (task1 (pickup ?r ?cr ?b2 ?from ?new_l1 ?new_l2 ?max_l))
+            (task2 (fill ?r ?b1 ?c1 ?t1 ?from))
+            (task3 (fill ?r ?b2 ?c2 ?t2 ?from))
+            (task4 (move ?r ?from ?to))
+            (task5 (start_empty ?r ?cr ?b1 ?c1 ?t1 ?p ?to 
+                        ?old_needs_p ?new_needs_p 
+                        ?old_needed_at ?new_needed_at))
+            (task6 (check_empty ?r ?cr ?b1 ?c1 ?t1 ?to))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+            (task2 < task3)
+            (task3 < task4)
+            (task4 < task5)
+            (task5 < task6)
+        )
+    )
+
+    (:method m_load_1_and_go_rescue_2
+        :parameters (
+            ?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type
+            ?p1 - person ?p2 - person ?from - location ?to - location 
+            ?old_l - quantity ?new_l - quantity ?max_l - quantity
+            ?old_needs_p1 - quantity ?new_needs_p1 - quantity
+            ?old_needs_p2 - quantity ?new_needs_p2 - quantity
+            ?old_needed_at - quantity ?new_needed_at1 - quantity ?new_needed_at2 - quantity
+        )
+        :task (t_rescue ?r ?p1)
+        :subtasks (and 
+            (task0 (pickup ?r ?cr ?b ?from ?old_l ?new_l ?max_l))
+            (task1 (fill ?r ?b ?c ?t ?from))
+            (task2 (move ?r ?from ?to))
+            (task3 (start_empty ?r ?cr ?b ?c ?t ?p1 ?to 
+                        ?old_needs_p1 ?new_needs_p1 
+                        ?old_needed_at ?new_needed_at1))
+            (task4 (continue_empty ?r ?cr ?b ?c ?t ?p2 ?to
+                        ?old_needs_p2 ?new_needs_p2 
+                        ?new_needed_at1 ?new_needed_at2))
+            (task5 (check_empty ?r ?cr ?b ?c ?t ?to))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+            (task2 < task3)
+            (task3 < task4)
+            (task4 < task5)
+        )
+    )
+
+    (:method m_load_2_and_go_rescue_2
+        :parameters (
+            ?r - robot ?cr - carrier
+            ?b1 - box ?c1 - content ?t1 - content_type
+            ?b2 - box ?c2 - content ?t2 - content_type
+            ?p1 - person ?p2 - person ?from - location ?to - location 
+            ?old_l - quantity ?new_l1 - quantity 
+            ?new_l2 - quantity ?max_l - quantity
+            ?old_needs_p1 - quantity ?new_needs_p1 - quantity
+            ?old_needs_p2 - quantity ?new_needs_p2 - quantity
+            ?old_needed_at - quantity ?new_needed_at1 - quantity ?new_needed_at2 - quantity
+        )
+        :task (t_rescue ?r ?p1)
+        :subtasks (and 
+            (task0 (pickup ?r ?cr ?b1 ?from ?old_l ?new_l1 ?max_l))
+            (task1 (pickup ?r ?cr ?b2 ?from ?new_l1 ?new_l2 ?max_l))
+            (task2 (fill ?r ?b1 ?c1 ?t1 ?from))
+            (task3 (fill ?r ?b2 ?c2 ?t2 ?from))
+            (task4 (move ?r ?from ?to))
+            (task5 (start_empty ?r ?cr ?b1 ?c1 ?t1 ?p1 ?to 
+                        ?old_needs_p1 ?new_needs_p1 
+                        ?old_needed_at ?new_needed_at1))
+            (task6 (continue_empty ?r ?cr ?b1 ?c1 ?t1 ?p2 ?to
+                        ?old_needs_p2 ?new_needs_p2 
+                        ?new_needed_at1 ?new_needed_at2))
+            (task7 (check_empty ?r ?cr ?b1 ?c1 ?t1 ?to))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+            (task2 < task3)
+            (task3 < task4)
+            (task4 < task5)
+            (task5 < task6)
+            (task6 < task7)
+        )
+    )
+
+    (:method m_go_load_1_and_go_rescue_1
+        :parameters (
+            ?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type
+            ?p - person ?from - location ?to1 - location ?to2 - location
+            ?old_l - quantity ?new_l - quantity ?max_l - quantity
+            ?old_needs_p - quantity ?new_needs_p - quantity
+            ?old_needed_at - quantity ?new_needed_at - quantity
+        )
+        :task (t_rescue ?r ?p)
+        :subtasks (and 
+            (task0 (move ?r ?from ?to1))
+            (task1 (pickup ?r ?cr ?b ?to1 ?old_l ?new_l ?max_l))
+            (task2 (fill ?r ?b ?c ?t ?to1))
+            (task3 (move ?r ?to1 ?to2))
+            (task4 (start_empty ?r ?cr ?b ?c ?t ?p ?to2 
+                        ?old_needs_p ?new_needs_p 
+                        ?old_needed_at ?new_needed_at))
+            (task5 (check_empty ?r ?cr ?b ?c ?t ?to2))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+            (task2 < task3)
+            (task3 < task4)
+            (task4 < task5)
+        )
+    )
+
+    (:method m_go_load_1_and_go_rescue_2
+        :parameters (
+            ?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type
+            ?p1 - person ?p2 - person ?from - location ?to1 - location ?to2 - location
+            ?old_l - quantity ?new_l - quantity ?max_l - quantity
+            ?old_needs_p1 - quantity ?new_needs_p1 - quantity
+            ?old_needs_p2 - quantity ?new_needs_p2 - quantity
+            ?old_needed_at - quantity ?new_needed_at1 - quantity ?new_needed_at2 - quantity
+        )
+        :task (t_rescue ?r ?p1)
+        :subtasks (and 
+            (task0 (move ?r ?from ?to1))
+            (task1 (pickup ?r ?cr ?b ?to1 ?old_l ?new_l ?max_l))
+            (task2 (fill ?r ?b ?c ?t ?to1))
+            (task3 (move ?r ?to1 ?to2))
+            (task4 (start_empty ?r ?cr ?b ?c ?t ?p1 ?to2 
+                        ?old_needs_p1 ?new_needs_p1 
+                        ?old_needed_at ?new_needed_at1))
+            (task5 (continue_empty ?r ?cr ?b ?c ?t ?p2 ?to2 
+                        ?old_needs_p2 ?new_needs_p2 
+                        ?new_needed_at1 ?new_needed_at2))
+            (task6 (check_empty ?r ?cr ?b ?c ?t ?to2))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+            (task2 < task3)
+            (task3 < task4)
+            (task4 < task5)
+            (task5 < task6)
+        )
+    )
+
+    (:method m_fill_1_and_go_rescue_1
+        :parameters (
+            ?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type
+            ?p - person ?from - location ?to - location 
+            ?old_needs_p - quantity ?new_needs_p - quantity
+            ?old_needed_at - quantity ?new_needed_at - quantity
+        )
+        :task (t_rescue ?r ?p)
+        :precondition (and
+            (pulls ?r ?cr)
+            (carries ?cr ?b)
+        )
+        :subtasks (and 
+            (task0 (fill ?r ?b ?c ?t ?from))
+            (task1 (move ?r ?from ?to))
+            (task2 (start_empty ?r ?cr ?b ?c ?t ?p ?to 
+                        ?old_needs_p ?new_needs_p 
+                        ?old_needed_at ?new_needed_at))
+            (task3 (check_empty ?r ?cr ?b ?c ?t ?to))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+            (task2 < task3)
+        )
+    )
+
+    (:method m_fill_2_and_go_rescue_1
+        :parameters (
+            ?r - robot ?cr - carrier
+            ?b1 - box ?c1 - content ?t1 - content_type
+            ?b2 - box ?c2 - content ?t2 - content_type
+            ?p - person ?from - location ?to - location 
+            ?old_needs_p - quantity ?new_needs_p - quantity
+            ?old_needed_at - quantity ?new_needed_at - quantity
+        )
+        :task (t_rescue ?r ?p)
+        :precondition (and
+            (pulls ?r ?cr)
+            (carries ?cr ?b1)
+            (carries ?cr ?b2)
+        )
+        :subtasks (and 
+            (task0 (fill ?r ?b1 ?c1 ?t1 ?from))
+            (task1 (fill ?r ?b2 ?c2 ?t2 ?from))
+            (task2 (move ?r ?from ?to))
+            (task3 (start_empty ?r ?cr ?b1 ?c1 ?t1 ?p ?to 
+                        ?old_needs_p ?new_needs_p 
+                        ?old_needed_at ?new_needed_at))
+            (task4 (check_empty ?r ?cr ?b1 ?c1 ?t1 ?to))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+            (task2 < task3)
+            (task3 < task4)
+        )
+    )
+
+    (:method m_fill_1_and_go_rescue_2
+        :parameters (
+            ?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type
+            ?p1 - person ?p2 - person ?from - location ?to - location
+            ?old_needs_p1 - quantity ?new_needs_p1 - quantity
+            ?old_needs_p2 - quantity ?new_needs_p2 - quantity
+            ?old_needed_at - quantity ?new_needed_at1 - quantity ?new_needed_at2 - quantity
+        )
+        :task (t_rescue ?r ?p1)
+        :precondition (and
+            (pulls ?r ?cr)
+            (carries ?cr ?b)
+        )
+        :subtasks (and 
+            (task0 (fill ?r ?b ?c ?t ?from))
+            (task1 (move ?r ?from ?to))
+            (task2 (start_empty ?r ?cr ?b ?c ?t ?p1 ?to 
+                        ?old_needs_p1 ?new_needs_p1 
+                        ?old_needed_at ?new_needed_at1))
+            (task3 (continue_empty ?r ?cr ?b ?c ?t ?p2 ?to
+                        ?old_needs_p2 ?new_needs_p2 
+                        ?new_needed_at1 ?new_needed_at2))
+            (task4 (check_empty ?r ?cr ?b ?c ?t ?to))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+            (task2 < task3)
+            (task3 < task4)
+        )
+    )
+
+    (:method m_fill_2_and_go_rescue_2
+        :parameters (
+            ?r - robot ?cr - carrier 
+            ?b1 - box ?c1 - content ?t1 - content_type
+            ?b2 - box ?c2 - content ?t2 - content_type
+            ?p1 - person ?p2 - person ?from - location ?to - location
+            ?old_needs_p1 - quantity ?new_needs_p1 - quantity
+            ?old_needs_p2 - quantity ?new_needs_p2 - quantity
+            ?old_needed_at - quantity ?new_needed_at1 - quantity ?new_needed_at2 - quantity
+        )
+        :task (t_rescue ?r ?p1)
+        :precondition (and
+            (pulls ?r ?cr)
+            (carries ?cr ?b1)
+            (carries ?cr ?b2)
+        )
+        :subtasks (and 
+            (task0 (fill ?r ?b1 ?c1 ?t1 ?from))
+            (task1 (fill ?r ?b2 ?c2 ?t2 ?from))
+            (task2 (move ?r ?from ?to))
+            (task3 (start_empty ?r ?cr ?b1 ?c1 ?t1 ?p1 ?to 
+                        ?old_needs_p1 ?new_needs_p1 
+                        ?old_needed_at ?new_needed_at1))
+            (task4 (continue_empty ?r ?cr ?b1 ?c1 ?t1 ?p2 ?to
+                        ?old_needs_p2 ?new_needs_p2 
+                        ?new_needed_at1 ?new_needed_at2))
+            (task5 (check_empty ?r ?cr ?b1 ?c1 ?t1 ?to))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+            (task2 < task3)
+            (task3 < task4)
+        )
+    )
+
+    (:method m_go_fill_1_and_go_rescue_1
+        :parameters (
+            ?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type
+            ?p - person ?from - location ?to1 - location ?to2 - location
+            ?old_needs_p - quantity ?new_needs_p - quantity
+            ?old_needed_at - quantity ?new_needed_at - quantity
+        )
+        :task (t_rescue ?r ?p)
+        :precondition (and
+            (pulls ?r ?cr)
+            (carries ?cr ?b)
+        )
+        :subtasks (and 
+            (task0 (move ?r ?from ?to1))
+            (task1 (fill ?r ?b ?c ?t ?to1))
+            (task2 (move ?r ?to1 ?to2))
+            (task3 (start_empty ?r ?cr ?b ?c ?t ?p ?to2 
+                        ?old_needs_p ?new_needs_p 
+                        ?old_needed_at ?new_needed_at))
+            (task4 (check_empty ?r ?cr ?b ?c ?t ?to2))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+            (task2 < task3)
+            (task3 < task4)
+        )
+    )
+
+    (:method m_go_fill_1_and_go_rescue_2
+        :parameters (
+            ?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type
+            ?p1 - person ?p2 - person ?from - location ?to1 - location ?to2 - location
+            ?old_needs_p1 - quantity ?new_needs_p1 - quantity
+            ?old_needs_p2 - quantity ?new_needs_p2 - quantity
+            ?old_needed_at - quantity ?new_needed_at1 - quantity ?new_needed_at2 - quantity
+        )
+        :task (t_rescue ?r ?p1)
+        :precondition (and
+            (pulls ?r ?cr)
+            (carries ?cr ?b)
+        )
+        :subtasks (and 
+            (task0 (move ?r ?from ?to1))
+            (task1 (fill ?r ?b ?c ?t ?to1))
+            (task2 (move ?r ?to1 ?to2))
+            (task3 (start_empty ?r ?cr ?b ?c ?t ?p1 ?to2 
+                        ?old_needs_p1 ?new_needs_p1 
+                        ?old_needed_at ?new_needed_at1))
+            (task4 (continue_empty ?r ?cr ?b ?c ?t ?p2 ?to2 
+                        ?old_needs_p2 ?new_needs_p2 
+                        ?new_needed_at1 ?new_needed_at2))
+            (task5 (check_empty ?r ?cr ?b ?c ?t ?to2))
+        )
+        :ordering (and 
+            (task0 < task1)
+            (task1 < task2)
+            (task2 < task3)
+            (task3 < task4)
+            (task4 < task5)
+        )
+    )
+
+    (:method m_return_to_depot
+        :parameters (?r - robot ?cr - carrier ?from - location)
+        :task (t_return ?r)
+        :subtasks (and 
+            (move ?r ?from depot)
+        )
+    )
+    
+    ;;; ACTIONS ;;;
+
+    ; NOTE: we assume the robot might fill a box even if it's not loaded
+    ; NOTE: this design allows the robot to fill en empty box loaded by another robot
+    ; fill a single box, if the box is empty and content, box and agent are all at the same location
+    (:action fill
+        :parameters (?r - robot ?b - box ?c - content ?t - content_type ?l - location)
+        :precondition (and 
+            (at ?r ?l) (at ?b ?l) (at ?c ?l) (not_busy ?r)
+            (empty ?b) (available ?c) (instance_of ?c ?t)
+        ) 
+        :effect (and (contains ?b ?c) (not (empty ?b)) (not (available ?c)))
+    )
+
+    ; NOTE: in this domain emptying is NOT intended as an atomic action (serving one person at a time)
+    ; NOTE: we assume that a robot can empty only a box carried by its own carrier
+    ; NOTE: we assume the box to be still loaded on the robot after emptying
+    ; NOTE: no need to check for position of other locatables since we check they're all attached to each other
+    ; empty a box by dropping the content at the current location, and causing the people at the same location to have the content
+    (:action start_empty
+        :parameters (
+            ?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type ?p - person ?l - location 
+            ?old_q - quantity ?new_q - quantity ?old_q_at - quantity ?new_q_at - quantity
+        )
+        :precondition (and 
+            (at ?r ?l) (at ?p ?l) (pulls ?r ?cr) (carries ?cr ?b) 
+            (contains ?b ?c) (instance_of ?c ?t) (needs ?p ?t) (not_busy ?r) 
+            (succ ?old_q ?new_q) (succ ?old_q_at ?new_q_at) 
+            (count_needs ?p ?old_q) (count_needed_at ?t ?l ?old_q_at)
+        )
+        :effect (and 
+            (not (not_busy ?r)) 
+            (is_emptying_at ?r ?b ?l) 
+            (not (needs ?p ?t))
+            (not (count_needs ?p ?old_q))
+            (count_needs ?p ?new_q)
+            (not (count_needed_at ?t ?l ?old_q_at))
+            (count_needed_at ?t ?l ?new_q_at)
+        )
+    )
+
+    ; NOTE: in this domain emptying is NOT intended as an atomic action (serving one person at a time)
+    ; NOTE: we assume that a robot can empty only a box carried by its own carrier
+    ; NOTE: we assume the box to be still loaded on the robot after emptying
+    ; NOTE: no need to check for position of other locatables since we check they're all attached to each other
+    ; empty a box by dropping the content at the current location, and causing the people at the same location to have the content
+    (:action continue_empty
+        :parameters (
+            ?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type ?p - person ?l - location 
+            ?old_q - quantity ?new_q - quantity ?old_q_at - quantity ?new_q_at - quantity
+        )
+        :precondition (and 
+            (at ?r ?l) (at ?p ?l) (pulls ?r ?cr) (carries ?cr ?b) (contains ?b ?c) 
+            (instance_of ?c ?t) (needs ?p ?t) (is_emptying_at ?r ?b ?l)
+            (succ ?old_q ?new_q) (succ ?old_q_at ?new_q_at) 
+            (count_needs ?p ?old_q) (count_needed_at ?t ?l ?old_q_at)
+        )
+        :effect (and 
+            (not (not_busy ?r)) 
+            (is_emptying_at ?r ?b ?l) 
+            (not (needs ?p ?t))
+            (not (count_needs ?p ?old_q))
+            (count_needs ?p ?new_q)
+            (not (count_needed_at ?t ?l ?old_q_at))
+            (count_needed_at ?t ?l ?new_q_at)
+        )
+    )
+
+    ; NOTE: in this domain emptying is NOT intended as an atomic action (serving one person at a time)
+    ; NOTE: no need to check for position of other locatables since we check they're all attached to each other
+    ; NOTE: after emptying, the effect actively changes position of content, since it's not in the box anymore
+    ; change status of a box to empty (all people at location were served with content)
+    (:action check_empty
+        :parameters (?r - robot ?cr - carrier ?b - box ?c - content ?t - content_type ?l - location)
+        :precondition (and 
+            (at ?r ?l) (pulls ?r ?cr) (carries ?cr ?b) (contains ?b ?c) (instance_of ?c ?t)
+            (is_emptying_at ?r ?b ?l) (count_needed_at ?t ?l zero)
+        )
+        :effect (and 
+            (not_busy ?r) (not (is_emptying_at ?r ?b ?l)) 
+            (empty ?b) (not (contains ?b ?c)) (at ?c ?l)
+        )
+    )
+    
+    ; NOTE: no need to check for position of carrier since we check it's pulled by the robot
+    ; pick up a single box and load it on the carrier, if it is at the same location as the box
+    (:action pickup
+        :parameters (?r - robot ?cr - carrier ?b - box ?l - location ?old_q - quantity ?new_q - quantity ?max_q - quantity)
+        :precondition (and 
+            (at ?r ?l) (at ?b ?l) (not_busy ?r) (pulls ?r ?cr) (loadable ?b) 
+            (succ ?new_q ?old_q) (count_load ?cr ?old_q) 
+            (max_load ?cr ?max_q) (leq ?new_q ?max_q)
+        )
+        :effect (and (carries ?cr ?b) (not (loadable ?b)) (count_load ?cr ?new_q))
+    )
+
+    ; NOTE: no need to change position of other locatables thanks to attached-aware logic
+    ; move to another location (no matter if robot has anything attached or not)
+    (:action move
+        :parameters (?r - robot ?from - location ?to - location)
+        :precondition (and (at ?r ?from) (not_busy ?r))
+        :effect (and (not (at ?r ?from)) (at ?r ?to))
+    )     
+
+    ; NOTE: no need to check for position of other locatables since we check they're all attached to each other
+    ; NOTE: after deliver, the effect actively changes position of box, since it's not on the carrier anymore
+    ; NOTE: no explicit mention to deliver only boxes that are full
+    ; deliver a box to a specific person who is at the same location
+    (:action deliver
+        :parameters (?r - robot ?cr - carrier ?b - box ?p - person ?l - location ?old_q - quantity ?new_q - quantity)
+        :precondition (and 
+            (at ?r ?l) (at ?p ?l) (not_busy ?r) (pulls ?r ?cr) 
+            (carries ?cr ?b) (count_load ?cr ?old_q) (succ ?old_q ?new_q)
+        )
+        :effect (and (at ?b ?l) (loadable ?b) (not (carries ?cr ?b)) (count_load ?cr ?new_q))
+    )
+)
+
+

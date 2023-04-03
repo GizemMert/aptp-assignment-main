@@ -1,0 +1,23 @@
+;;!domain: emergency-service-extended-durative
+;;!problem: problem_four
+; States evaluated: 6032
+; Cost: 55.017
+; Time 6.27
+0.000: (fill agent b1 c3 medicine depot)  [3.000]
+3.001: (pickup agent cr1 b1 depot)  [2.000]
+5.002: (move agent depot l1)  [5.000]
+10.003: (start_empty agent cr1 b1 c3 medicine gizem l1)  [3.000]
+13.004: (check_empty agent cr1 b1 c3 medicine l1)  [1.000]
+14.005: (check_safe agent gizem)  [1.000]
+15.006: (move agent l1 depot)  [5.000]
+20.007: (fill agent b1 c1 food depot)  [3.000]
+23.008: (move agent depot l2)  [5.000]
+28.009: (start_empty agent cr1 b1 c1 food daria l2)  [3.000]
+31.010: (check_empty agent cr1 b1 c1 food l2)  [1.000]
+32.011: (move agent l2 depot)  [5.000]
+37.012: (fill agent b1 c4 medicine depot)  [3.000]
+40.013: (move agent depot l2)  [5.000]
+45.014: (start_empty agent cr1 b1 c4 medicine daria l2)  [3.000]
+48.015: (check_empty agent cr1 b1 c4 medicine l2)  [1.000]
+49.016: (check_safe agent daria)  [1.000]
+50.017: (move agent l2 depot)  [5.000]
